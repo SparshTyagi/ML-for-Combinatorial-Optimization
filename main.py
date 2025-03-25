@@ -11,6 +11,10 @@ import torch
 from pathlib import Path
 
 from src.utils import setup_logging, set_seed, timer, save_results
+from src.graph_generation.random_graphs import generate_random_graph
+from src.graph_generation.scale_free_graphs import generate_scale_free_graph
+from src.graph_generation.small_world_graphs import generate_small_world_graph
+from src.graph_generation.geometric_graphs import generate_geometric_graph
 from src.coloring.greedy import greedy_edge_coloring
 from src.coloring.vizing import vizing_edge_coloring
 from src.coloring.ilp import ilp_edge_coloring
@@ -110,10 +114,8 @@ def generate_graph_instances(args):
                     key = f'{graph_type}_n{size}_p{p}'
                     graphs[key] = []
                     for i in range(args.num_per_config):
-                        G = nx.erdos_renyi_graph(size, p, seed=args.seed + i)
-                        # Ensure graph is connected
-                        if not nx.is_connected(G):
-                            G = max(nx.connected_component_subgraphs(G), key=len)
+                        # Use the imported generator
+                        G = generate_random_graph(size, p, seed=args.seed + i, ensure_connected=True)
                         graphs[key].append(G)
                         
         elif graph_type == 'scale_free':
@@ -123,7 +125,8 @@ def generate_graph_instances(args):
                     key = f'{graph_type}_n{size}_m{m}'
                     graphs[key] = []
                     for i in range(args.num_per_config):
-                        G = nx.barabasi_albert_graph(size, m, seed=args.seed + i)
+                        # Use the imported generator
+                        G = generate_scale_free_graph(size, m, seed=args.seed + i)
                         graphs[key].append(G)
                         
         elif graph_type == 'small_world':
@@ -135,7 +138,8 @@ def generate_graph_instances(args):
                         key = f'{graph_type}_n{size}_k{k}_p{p}'
                         graphs[key] = []
                         for i in range(args.num_per_config):
-                            G = nx.watts_strogatz_graph(size, k, p, seed=args.seed + i)
+                            # Use the imported generator
+                            G = generate_small_world_graph(size, k, p, seed=args.seed + i)
                             graphs[key].append(G)
                             
         elif graph_type == 'geometric':
@@ -145,10 +149,8 @@ def generate_graph_instances(args):
                     key = f'{graph_type}_n{size}_r{radius}'
                     graphs[key] = []
                     for i in range(args.num_per_config):
-                        G = nx.random_geometric_graph(size, radius, seed=args.seed + i)
-                        # Ensure graph is connected
-                        if not nx.is_connected(G):
-                            G = max(nx.connected_component_subgraphs(G), key=len)
+                        # Use the imported generator
+                        G = generate_geometric_graph(size, radius, seed=args.seed + i, ensure_connected=True)
                         graphs[key].append(G)
     
     # Save the generated graphs
