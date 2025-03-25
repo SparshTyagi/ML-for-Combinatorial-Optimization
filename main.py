@@ -26,7 +26,7 @@ from src.training.train_evaluate import train_model, evaluate_model
 from src.models.random_forest import EdgeColoringRandomForest
 from src.models.gnn import GNNEdgeColoring
 from src.models.hybrid_model import HybridEdgeColoring
-from src.visualization.graph_viz import visualize_graph_coloring
+from src.visualization.graph_viz import visualize_coloring as visualize_graph_coloring
 from src.visualization.results_viz import (
     plot_performance_comparison,
     plot_feature_importance,
@@ -115,7 +115,7 @@ def generate_graph_instances(args):
                     graphs[key] = []
                     for i in range(args.num_per_config):
                         # Use the imported generator
-                        G = generate_random_graph(size, p, seed=args.seed + i, ensure_connected=True)
+                        G = generate_random_graph(size, p, seed=args.seed + i, connected=True)
                         graphs[key].append(G)
                         
         elif graph_type == 'scale_free':

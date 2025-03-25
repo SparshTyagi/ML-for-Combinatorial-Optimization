@@ -208,3 +208,239 @@ def plot_computation_time(data, figsize=(10, 6), title="Computation Time Compari
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
     
     plt.show()
+
+def plot_scaling_behavior(results, figsize=(12, 8), title="Scaling Behavior by Graph Size",
+                         metric='time', save_path=None):
+    """
+    Visualize how algorithm performance scales with graph size.
+    
+    Args:
+        results (dict): Results dictionary containing performance metrics
+        figsize (tuple): Figure size (width, height)
+        title (str): Plot title
+        metric (str): Metric to visualize ('time' by default)
+        save_path (str): Path to save the figure
+        
+    Returns:
+        tuple: (figure, axes) matplotlib objects
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # Prepare data for plotting
+    methods = []
+    method_data = {}
+    
+    for method_name, method_results in results.items():
+        if len(method_results[metric]) > 0:  # Only include methods with data
+            methods.append(method_name)
+            
+            # Extract data points
+            sizes = [info['num_nodes'] for info in method_results['graph_info']]
+            metric_values = method_results[metric]
+            
+            # Group by size and calculate mean
+            df = pd.DataFrame({
+                'size': sizes,
+                metric: metric_values
+            })
+            grouped = df.groupby('size')[metric].mean().reset_index()
+            
+            method_data[method_name] = {
+                'sizes': grouped['size'].values,
+                'values': grouped[metric].values
+            }
+    
+    # Plot data
+    for method in methods:
+        ax.plot(
+            method_data[method]['sizes'], 
+            method_data[method]['values'], 
+            marker='o', 
+            label=method,
+            linewidth=2,
+            markersize=6
+        )
+    
+    # Add reference scaling lines if plotting time
+    if metric == 'time' and len(method_data) > 0:
+        # Find a representative method to base reference lines on
+        ref_method = methods[0]
+        x = method_data[ref_method]['sizes']
+        y = method_data[ref_method]['values']
+        
+        if len(x) > 1:
+            # Get a scaling factor from the data
+            scale_factor = y[-1] / 50
+            max_x = max(x)
+            
+            # Plot O(n) reference
+            ax.plot(x, [scale_factor * xi for xi in x], 'k--', alpha=0.3, label='O(n)')
+            
+            # Plot O(n²) reference
+            ax.plot(x, [scale_factor * (xi/x[0])**2 for xi in x], 'k:', alpha=0.3, label='O(n²)')
+    
+    # Set labels and title
+    ax.set_xlabel('Number of Nodes')
+    ax.set_ylabel('Computation Time (s)' if metric == 'time' else metric.capitalize())
+    ax.set_title(title)
+    
+    # Use log scale for time plots with wide range
+    if metric == 'time':
+        values = np.concatenate([data['values'] for data in method_data.values()])
+        if max(values) / (min(values) + 1e-10) > 100:  # If range is more than 2 orders of magnitude
+            ax.set_yscale('log')
+    
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    
+    plt.tight_layout()
+    
+    # Save if path is provided
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+    
+    return fig, ax
+
+def plot_solution_quality(results, figsize=(12, 8), title="Solution Quality Comparison",
+                         metric='color_count_ratio', by_graph_type=True, save_path=None):
+    """
+    Visualize the quality of solutions produced by different methods.
+    
+    Args:
+        results (dict): Results dictionary containing performance metrics
+        figsize (tuple): Figure size (width, height)
+        title (str): Plot title
+        metric (str): Metric to visualize ('color_count_ratio' by default)
+        by_graph_type (bool): Whether to group results by graph type
+        save_path (str): Path to save the figure
+        
+    Returns:
+        tuple: (figure, axes) matplotlib objects
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # Extract and organize data
+    df_rows = []
+    
+    for method_name, method_results in results.items():
+        if 'graph_info' in method_results and len(method_results['graph_info']) > 0:
+            for i, info in enumerate(method_results['graph_info']):
+                if i < len(method_results[metric if metric != 'color_count_ratio' else 'color_count']):
+                    value = (method_results[metric][i] if metric != 'color_count_ratio' 
+                            else info.get('color_count_ratio', 
+                                        method_results['color_count'][i] / info.get('max_degree', 1)))
+                    
+                    df_rows.append({
+                        'Method': method_name,
+                        'Graph Type': info['graph_type'],
+                        'Value': value,
+                        'Num Nodes': info['num_nodes']
+                    })
+    
+    if not df_rows:
+        ax.text(0.5, 0.5, "No data available", ha='center', va='center', transform=ax.transAxes)
+        return fig, ax
+    
+    df = pd.DataFrame(df_rows)
+    
+    # Plot based on grouping preference
+    if by_graph_type:
+        # Group by graph type and method, show boxplot
+        sns.boxplot(x='Graph Type', y='Value', hue='Method', data=df, ax=ax)
+        
+        # Adjust x-axis labels if they're too long
+        if df['Graph Type'].str.len().max() > 15:
+            plt.xticks(rotation=45, ha='right')
+    else:
+        # Just compare methods
+        sns.boxplot(x='Method', y='Value', data=df, ax=ax)
+    
+    # Set labels and title
+    y_label = {
+        'color_count': 'Number of Colors Used',
+        'color_count_ratio': 'Color Count / Maximum Degree',
+        'time': 'Computation Time (s)'
+    }.get(metric, metric.capitalize())
+    
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    
+    if by_graph_type:
+        ax.legend(title='Method', loc='upper right')
+    
+    plt.tight_layout()
+    
+    # Save if path is provided
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+    
+    return fig, ax
+
+def plot_performance_comparison(results, metric='color_count_ratio', figsize=(10, 6),
+                               title="Algorithm Performance Comparison", save_path=None):
+    """
+    Compare performance of different algorithms.
+    
+    Args:
+        results (dict): Results dictionary containing performance metrics
+        metric (str): Metric to compare ('color_count_ratio' by default)
+        figsize (tuple): Figure size
+        title (str): Plot title
+        save_path (str): Path to save the figure
+        
+    Returns:
+        tuple: (figure, axes) matplotlib objects
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # Extract metric values for each method
+    methods = []
+    values = []
+    
+    for method_name, method_results in results.items():
+        # Skip methods with no data
+        if metric not in method_results or len(method_results[metric]) == 0:
+            continue
+            
+        methods.append(method_name)
+        
+        if metric == 'color_count_ratio':
+            # For this metric, we need to calculate from graph_info
+            ratios = []
+            for i, info in enumerate(method_results['graph_info']):
+                if 'color_count_ratio' in info:
+                    ratios.append(info['color_count_ratio'])
+                elif i < len(method_results['color_count']) and 'max_degree' in info:
+                    ratios.append(method_results['color_count'][i] / info['max_degree'])
+            values.append(ratios)
+        else:
+            values.append(method_results[metric])
+    
+    # Create violin plot
+    violin_parts = ax.violinplot(values, showmedians=True)
+    
+    # Add better labels
+    ax.set_xticks(range(1, len(methods) + 1))
+    ax.set_xticklabels(methods)
+    
+    # Set labels and title
+    y_label = {
+        'color_count': 'Number of Colors Used',
+        'color_count_ratio': 'Color Count / Maximum Degree',
+        'time': 'Computation Time (s)'
+    }.get(metric, metric.capitalize())
+    
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    
+    # Save if path is provided
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+    
+    return fig, ax

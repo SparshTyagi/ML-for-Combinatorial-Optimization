@@ -1,7 +1,7 @@
 # src/graph_generation/scale_free_graphs.py
 import networkx as nx
 
-def generate_scale_free_graph(n, m):
+def generate_scale_free_graph(n, m, seed=None):
     """
     Generate a scale-free graph using the Barabási-Albert model
     
@@ -11,6 +11,8 @@ def generate_scale_free_graph(n, m):
         Number of vertices
     m : int
         Number of edges to attach from a new node to existing nodes
+    seed : int, optional
+        Random seed for reproducibility
         
     Returns:
     --------
@@ -19,7 +21,7 @@ def generate_scale_free_graph(n, m):
     """
     # Ensure we can create a valid BA graph
     m = min(m, n-1)
-    G = nx.barabasi_albert_graph(n, m)
+    G = nx.barabasi_albert_graph(n, m, seed=seed)
     
     # Add edge indices as attributes
     for i, (u, v) in enumerate(G.edges()):
