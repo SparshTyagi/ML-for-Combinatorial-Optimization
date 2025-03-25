@@ -1,0 +1,42 @@
+ML-for-Combinatorial-Optimization/
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── results/
+├── src/
+│   ├── graph_generation/
+│   │   ├── __init__.py
+│   │   ├── random_graphs.py
+│   │   ├── scale_free_graphs.py
+│   │   ├── small_world_graphs.py
+│   │   └── geometric_graphs.py
+│   ├── coloring/
+│   │   ├── __init__.py
+│   │   ├── greedy.py
+│   │   ├── vizing.py
+│   │   ├── ilp.py
+│   │   └── local_search.py
+│   ├── features/
+│   │   ├── __init__.py
+│   │   ├── graph_features.py
+│   │   └── edge_features.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── random_forest.py
+│   │   ├── gnn.py
+│   │   └── hybrid_model.py
+│   ├── training/
+│   │   ├── __init__.py
+│   │   ├── dataset.py
+│   │   └── train_evaluate.py
+│   ├── visualization/
+│   │   ├── __init__.py
+│   │   ├── graph_viz.py
+│   │   └── results_viz.py
+│   └── utils.py
+├── notebooks/
+│   ├── data_exploration.ipynb
+│   ├── model_comparison.ipynb
+│   └── case_studies.ipynb
+├── config.py
+└── main.py
